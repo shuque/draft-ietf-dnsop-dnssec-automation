@@ -530,11 +530,13 @@
         made in situations where using the same algorithm isn't possible.
       </t>
       <t>
-        <xref target="RFC4035" section="2.2"/> states that
-        a signed zone MUST include a DNSKEY for each algorithm present in
-        the zone's DS RRset and expected trust anchors for the zone.
-        A setup where different signers use different key algorithms therefore
-        violates <xref target="RFC4035" />.
+        <xref target="RFC4035" section="2.2"/> requires that there be an
+        RRSIG for each RRset using at least one DNSKEY of each algorithm in
+        the zone apex DNSKEY RRset, and that the apex DNSKEY RRset itself be
+        signed by each algorithm appearing in the DS RRset at the delegating
+        parent. A setup where different signers use different key algorithms,
+        each signing only with its own algorithm, therefore violates
+        <xref target="RFC4035" />.
       </t>
       <t>
         According to <xref target="RFC6840" section="5.11" />
