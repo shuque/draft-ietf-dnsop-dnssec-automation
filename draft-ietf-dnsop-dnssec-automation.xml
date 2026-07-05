@@ -351,7 +351,8 @@
             and the signer.
           </li>
           <li>
-            Add ZSK for each signer to the DNSKEY RRsets of all the other signers.
+            Add the zone-data-signing key (ZSK, or CSK) of each signer to
+            the DNSKEY RRsets of all the other signers.
           </li>
           <li>
             Calculate CDS/CDNSKEY Records for all KSKs/CSKs represented
