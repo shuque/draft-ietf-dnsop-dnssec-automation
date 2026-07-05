@@ -121,6 +121,20 @@
         described in BCP 14 <xref target="RFC2119" /> <xref target="RFC8174" /> when,
         and only when, they appear in all capitals, as shown here.
       </t>
+      <t><strong>KSK</strong></t>
+      <t>Key Signing Key: a DNSSEC key used to sign the DNSKEY RRset.</t>
+      <t><strong>ZSK</strong></t>
+      <t>Zone Signing Key: a DNSSEC key used to sign the other RRsets in a zone.</t>
+      <t><strong>CSK</strong></t>
+      <t>Combined Signing Key: a single key serving both the KSK and ZSK roles.</t>
+      <t><strong>DNSKEY</strong></t>
+      <t>The DNS public key record (<xref target="RFC4034" />).</t>
+      <t><strong>DS</strong></t>
+      <t>The Delegation Signer record published by the parent (<xref target="RFC4034" />).</t>
+      <t><strong>CDS/CDNSKEY</strong></t>
+      <t>Child-published records signaling the desired DS state to the parent (<xref target="RFC7344" />, <xref target="RFC8078" />).</t>
+      <t><strong>CSYNC</strong></t>
+      <t>The Child-to-Parent Synchronization record (<xref target="RFC7477" />).</t>
       <t><strong>Signer</strong></t>
       <t>An entity signing a zone</t>
       <t><strong>Multi-signer Group</strong></t>
@@ -601,8 +615,10 @@
   <back>
     <references title="Normative References">
       <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.2119.xml"/>
+      <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.4034.xml"/>
       <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.4035.xml"/>
       <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.6840.xml"/>
+      <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.7344.xml"/>
       <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.7477.xml"/>
       <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8078.xml"/>
       <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8174.xml"/>
