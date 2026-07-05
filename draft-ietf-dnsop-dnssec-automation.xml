@@ -128,7 +128,7 @@
       <t><strong>Controller</strong></t>
       <t>
         An entity controlling the multi-signer group. Used in
-        the decentralized model.
+        the centralized model.
       </t>
       <t><strong>Parent</strong></t>
       <t>See <xref target="RFC8499" /></t>
