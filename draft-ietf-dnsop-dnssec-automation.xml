@@ -182,6 +182,18 @@
         The minimum NS-Wait-Time is the maximum of the TTL value of the
         NS set in the parent zone and all NS sets from all signers.
       </t>
+      <t><strong>RRSIG-Wait-Time</strong></t>
+      <t>
+        Once a signer stops signing zone data with a key, that key MUST
+        remain published in the DNSKEY RRsets of all signers until the
+        signatures it generated have expired from resolver caches. Only
+        then can the key be removed.
+      </t>
+      <t>
+        The minimum RRSIG-Wait-Time is the time it takes to publish the
+        zone on all secondaries plus the maximum TTL of any zone data
+        signed by that key.
+      </t>
     </section>
     <section numbered="true" toc="default">
       <name>Use Cases</name>
@@ -413,6 +425,11 @@
             CDS/CDNSKEY RRset.
           </li>
           <li>
+            Wait for RRSIG-Wait-Time, measured from when the exiting signer
+            stopped answering queries, so that any zone data it signed has
+            expired from resolver caches.
+          </li>
+          <li>
             Remove ZSK/CSK of the exiting signer from remaining signers.
           </li>
           <li>
@@ -436,14 +453,17 @@
             Wait for DNSKEY-Wait-Time.
           </li>
           <li>
-            Signer can start using the new ZSK.
+            Signer can start using the new ZSK, and stops signing with the
+            old ZSK.
           </li>
           <li>
-            When the old ZSK is not used in any signatures by the signer,
-            the signer can remove the old ZSK from its DNSKEY RRset.
+            Wait for RRSIG-Wait-Time, so that data signed with the old ZSK
+            has expired from resolver caches. The old ZSK MUST remain
+            published in the DNSKEY RRsets of all signers until then.
           </li>
           <li>
-            Remove ZSK from DNSKEY RRset of all signers.
+            Remove the old ZSK from the signer's own DNSKEY RRset, and from
+            the DNSKEY RRsets of all other signers.
           </li>
         </ol>
       </section>
@@ -467,6 +487,13 @@
           </li>
           <li>
             Wait for DS-Wait-Time + DNSKEY-Wait-Time.
+          </li>
+          <li>
+            In the case of a CSK, additionally wait for RRSIG-Wait-Time, so
+            that zone data signed with the old CSK has expired from resolver
+            caches. (This is not required for a KSK-only rollover, since a
+            KSK signs only the DNSKEY RRset, which is covered by
+            DNSKEY-Wait-Time.)
           </li>
           <li>
             Signer removes old CSK/KSK from its DNSKEY RRset, and removes all
