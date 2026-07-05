@@ -51,7 +51,7 @@
       </address>
     </author>
 
-    <date day="12" month="6" year="2026"/>
+    <date day="5" month="7" year="2026"/>
 
     <area>Operations and Management Area</area>
     <workgroup>Domain Name System Operations (dnsop)</workgroup>
@@ -121,6 +121,20 @@
         described in BCP 14 <xref target="RFC2119" /> <xref target="RFC8174" /> when,
         and only when, they appear in all capitals, as shown here.
       </t>
+      <t><strong>KSK</strong></t>
+      <t>Key Signing Key: a DNSSEC key used to sign the DNSKEY RRset.</t>
+      <t><strong>ZSK</strong></t>
+      <t>Zone Signing Key: a DNSSEC key used to sign the other RRsets in a zone.</t>
+      <t><strong>CSK</strong></t>
+      <t>Combined Signing Key: a single key serving both the KSK and ZSK roles.</t>
+      <t><strong>DNSKEY</strong></t>
+      <t>The DNS public key record (<xref target="RFC4034" />).</t>
+      <t><strong>DS</strong></t>
+      <t>The Delegation Signer record published by the parent (<xref target="RFC4034" />).</t>
+      <t><strong>CDS/CDNSKEY</strong></t>
+      <t>Child-published records signaling the desired DS state to the parent (<xref target="RFC7344" />, <xref target="RFC8078" />).</t>
+      <t><strong>CSYNC</strong></t>
+      <t>The Child-to-Parent Synchronization record (<xref target="RFC7477" />).</t>
       <t><strong>Signer</strong></t>
       <t>An entity signing a zone</t>
       <t><strong>Multi-signer Group</strong></t>
@@ -128,7 +142,7 @@
       <t><strong>Controller</strong></t>
       <t>
         An entity controlling the multi-signer group. Used in
-        the decentralized model.
+        the centralized model.
       </t>
       <t><strong>Parent</strong></t>
       <t>See <xref target="RFC8499" /></t>
@@ -167,6 +181,18 @@
       <t>
         The minimum NS-Wait-Time is the maximum of the TTL value of the
         NS set in the parent zone and all NS sets from all signers.
+      </t>
+      <t><strong>RRSIG-Wait-Time</strong></t>
+      <t>
+        Once a signer stops signing zone data with a key, that key MUST
+        remain published in the DNSKEY RRsets of all signers until the
+        signatures it generated have expired from resolver caches. Only
+        then can the key be removed.
+      </t>
+      <t>
+        The minimum RRSIG-Wait-Time is the time it takes to publish the
+        zone on all secondaries plus the maximum TTL of any zone data
+        signed by that key.
       </t>
     </section>
     <section numbered="true" toc="default">
@@ -310,9 +336,11 @@
         </t>
         <t>
           This can be viewed as an initial state where the multi-signer group has only one signer.
+          The group is then grown to its intended size by applying the
+          procedure in <xref target="join" /> to add each additional signer.
         </t>
       </section>
-      <section numbered="true" toc="default">
+      <section anchor="join" numbered="true" toc="default">
         <name>A signer joins the multi-signer group</name>
         <ol spacing="normal">
           <li>
@@ -323,7 +351,8 @@
             and the signer.
           </li>
           <li>
-            Add ZSK for each signer to the DNSKEY RRsets of all the other signers.
+            Add the zone-data-signing key (ZSK, or CSK) of each signer to
+            the DNSKEY RRsets of all the other signers.
           </li>
           <li>
             Calculate CDS/CDNSKEY Records for all KSKs/CSKs represented
@@ -350,8 +379,10 @@
           </li>
           <li>
             Compare NS RRset of the signers to the Parent. If there is a
-            difference, publish a CSYNC record with the NS, A, and AAAA bits
-            set on all signers.
+            difference, publish a CSYNC record with the NS bit set on all
+            signers. The A and AAAA bits are also set if any of the
+            nameservers are in-domain and thus require glue address records
+            at the Parent.
           </li>
           <li>
             Wait for Parent to publish updates to the delegating NS RRset based on observation of the CSYNC RRsets.
@@ -369,8 +400,10 @@
           </li>
           <li>
             Compare NS RRset of the signers to the Parent. If there
-            is a difference, publish a CSYNC record with the NS, A, and AAAA
-            bits set on the remaining signers.
+            is a difference, publish a CSYNC record with the NS bit set on
+            the remaining signers. The A and AAAA bits are also set if any
+            of the nameservers are in-domain and thus require glue address
+            records at the Parent.
           </li>
           <li>
             Wait for Parent to publish NS RRset.
@@ -391,6 +424,11 @@
           <li>
             Configure remaining signers with the compiled
             CDS/CDNSKEY RRset.
+          </li>
+          <li>
+            Wait for RRSIG-Wait-Time, measured from when the exiting signer
+            stopped answering queries, so that any zone data it signed has
+            expired from resolver caches.
           </li>
           <li>
             Remove ZSK/CSK of the exiting signer from remaining signers.
@@ -416,14 +454,17 @@
             Wait for DNSKEY-Wait-Time.
           </li>
           <li>
-            Signer can start using the new ZSK.
+            Signer can start using the new ZSK, and stops signing with the
+            old ZSK.
           </li>
           <li>
-            When the old ZSK is not used in any signatures by the signer,
-            the signer can remove the old ZSK from its DNSKEY RRset.
+            Wait for RRSIG-Wait-Time, so that data signed with the old ZSK
+            has expired from resolver caches. The old ZSK MUST remain
+            published in the DNSKEY RRsets of all signers until then.
           </li>
           <li>
-            Remove ZSK from DNSKEY RRset of all signers.
+            Remove the old ZSK from the signer's own DNSKEY RRset, and from
+            the DNSKEY RRsets of all other signers.
           </li>
         </ol>
       </section>
@@ -449,6 +490,13 @@
             Wait for DS-Wait-Time + DNSKEY-Wait-Time.
           </li>
           <li>
+            In the case of a CSK, additionally wait for RRSIG-Wait-Time, so
+            that zone data signed with the old CSK has expired from resolver
+            caches. (This is not required for a KSK-only rollover, since a
+            KSK signs only the DNSKEY RRset, which is covered by
+            DNSKEY-Wait-Time.)
+          </li>
+          <li>
             Signer removes old CSK/KSK from its DNSKEY RRset, and removes all
             signatures made with this key.
           </li>
@@ -470,7 +518,12 @@
         <name>Algorithm rollover for the whole multi-signer group</name>
         <ol>
           <li>All signers publish KSK and ZSK or CSK using the new algorithm.</li>
-          <li>All signers sign all zone data with the new keys.</li>
+          <li>
+            All signers sign all zone data with the new keys, while retaining
+            the signatures made with the old-algorithm keys, so that the zone
+            data is signed with both algorithms throughout the rollover (as
+            required by <xref target="RFC4035" section="2.2"/>).
+          </li>
           <li>Wait until all signers have signed all data with the new key(s).</li>
           <li>
             Add new ZSK of each signer to all other signers.
@@ -483,6 +536,10 @@
           </li>
           <li>
             Wait for DS-Wait-Time + DNSKEY-Wait-Time.
+          </li>
+          <li>
+            Wait for RRSIG-Wait-Time, so that any data signed only with the
+            old-algorithm keys has expired from resolver caches.
           </li>
           <li>
             Remove all keys and signatures that use the old algorithm.
@@ -510,11 +567,13 @@
         made in situations where using the same algorithm isn't possible.
       </t>
       <t>
-        <xref target="RFC4035" section="2.2"/> states that
-        a signed zone MUST include a DNSKEY for each algorithm present in
-        the zone's DS RRset and expected trust anchors for the zone.
-        A setup where different signers use different key algorithms therefore
-        violates <xref target="RFC4035" />.
+        <xref target="RFC4035" section="2.2"/> requires that there be an
+        RRSIG for each RRset using at least one DNSKEY of each algorithm in
+        the zone apex DNSKEY RRset, and that the apex DNSKEY RRset itself be
+        signed by each algorithm appearing in the DS RRset at the delegating
+        parent. A setup where different signers use different key algorithms,
+        each signing only with its own algorithm, therefore violates
+        <xref target="RFC4035" />.
       </t>
       <t>
         According to <xref target="RFC6840" section="5.11" />
@@ -557,6 +616,46 @@
         such "universal" algorithms and sanction such configurations.
       </t>
     </section>
+    <section anchor="operational" numbered="true" toc="default">
+      <name>Operational Considerations</name>
+      <t>
+        Full automation of the procedures described in this document depends
+        on all of the relevant parties -- the signers, the zone owner or
+        controller, and the Parent -- supporting the protocol mechanisms
+        these procedures rely on. Several of these mechanisms are not yet
+        universally implemented or deployed. On the Parent side, automated
+        management of DS records requires the Parent to perform CDS/CDNSKEY
+        scanning (or to accept
+        <xref target="RFC9859">Generalized NOTIFY</xref> signaling), and
+        automated updates of the delegation's NS records require CSYNC
+        scanning; neither is offered by every registry or registrar today.
+        On the signer side, not all DNS providers support the ability to
+        import and publish the DNSKEY and CDS/CDNSKEY records of the other
+        signers in the group, as required by the capabilities in
+        <xref target="capabilities" />. Where a required mechanism is
+        unavailable, the corresponding step must be performed by other
+        means, typically a manual update, until support becomes available.
+        A multi-signer group can still operate in such an environment, but
+        with manual steps interposed where automation is not yet possible.
+      </t>
+      <t>
+        Several steps require waiting for the Parent to publish updated DS
+        or NS RRsets in response to CDS/CDNSKEY or CSYNC records (or
+        Generalized NOTIFY signaling). The
+        timing of this publication is controlled by the Parent, not by the
+        multi-signer group, and depends on the Parent's scanning cadence or
+        notification handling. The Parent MAY also decline to act, for
+        example if the CDS/CDNSKEY records do not satisfy the Parent's
+        acceptance policy (see <xref target="RFC8078" />). Implementations
+        MUST NOT proceed to subsequent steps until the expected DS or NS
+        RRset change is observed at the Parent, and SHOULD bound each such
+        wait with a timeout after which the operation is flagged for
+        operator attention rather than continuing. A premature transition
+        to a later step, particularly one that removes a key or signature,
+        while the Parent still publishes the old delegation can break the
+        chain of trust and cause resolution failures.
+      </t>
+    </section>
     <section anchor="IANA" numbered="true" toc="default">
       <name>IANA Considerations</name>
       <t>This document has no IANA actions.</t>
@@ -597,15 +696,17 @@
   <back>
     <references title="Normative References">
       <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.2119.xml"/>
-      <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.2136.xml"/>
+      <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.4034.xml"/>
       <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.4035.xml"/>
       <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.6840.xml"/>
+      <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.7344.xml"/>
       <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.7477.xml"/>
       <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8078.xml"/>
       <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8174.xml"/>
       <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8499.xml"/>
     </references>
     <references title="Informative References">
+      <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.2136.xml"/>
       <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.6698.xml"/>
       <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8901.xml"/>
       <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.9859.xml"/>
