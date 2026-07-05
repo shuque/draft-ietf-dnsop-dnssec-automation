@@ -517,7 +517,12 @@
         <name>Algorithm rollover for the whole multi-signer group</name>
         <ol>
           <li>All signers publish KSK and ZSK or CSK using the new algorithm.</li>
-          <li>All signers sign all zone data with the new keys.</li>
+          <li>
+            All signers sign all zone data with the new keys, while retaining
+            the signatures made with the old-algorithm keys, so that the zone
+            data is signed with both algorithms throughout the rollover (as
+            required by <xref target="RFC4035" section="2.2"/>).
+          </li>
           <li>Wait until all signers have signed all data with the new key(s).</li>
           <li>
             Add new ZSK of each signer to all other signers.
@@ -530,6 +535,10 @@
           </li>
           <li>
             Wait for DS-Wait-Time + DNSKEY-Wait-Time.
+          </li>
+          <li>
+            Wait for RRSIG-Wait-Time, so that any data signed only with the
+            old-algorithm keys has expired from resolver caches.
           </li>
           <li>
             Remove all keys and signatures that use the old algorithm.
