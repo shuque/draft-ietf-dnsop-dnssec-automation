@@ -615,6 +615,46 @@
         such "universal" algorithms and sanction such configurations.
       </t>
     </section>
+    <section anchor="operational" numbered="true" toc="default">
+      <name>Operational Considerations</name>
+      <t>
+        Full automation of the procedures described in this document depends
+        on all of the relevant parties -- the signers, the zone owner or
+        controller, and the Parent -- supporting the protocol mechanisms
+        these procedures rely on. Several of these mechanisms are not yet
+        universally implemented or deployed. On the Parent side, automated
+        management of DS records requires the Parent to perform CDS/CDNSKEY
+        scanning (or to accept
+        <xref target="RFC9859">Generalized NOTIFY</xref> signaling), and
+        automated updates of the delegation's NS records require CSYNC
+        scanning; neither is offered by every registry or registrar today.
+        On the signer side, not all DNS providers support the ability to
+        import and publish the DNSKEY and CDS/CDNSKEY records of the other
+        signers in the group, as required by the capabilities in
+        <xref target="capabilities" />. Where a required mechanism is
+        unavailable, the corresponding step must be performed by other
+        means, typically a manual update, until support becomes available.
+        A multi-signer group can still operate in such an environment, but
+        with manual steps interposed where automation is not yet possible.
+      </t>
+      <t>
+        Several steps require waiting for the Parent to publish updated DS
+        or NS RRsets in response to CDS/CDNSKEY or CSYNC records (or
+        Generalized NOTIFY signaling). The
+        timing of this publication is controlled by the Parent, not by the
+        multi-signer group, and depends on the Parent's scanning cadence or
+        notification handling. The Parent MAY also decline to act, for
+        example if the CDS/CDNSKEY records do not satisfy the Parent's
+        acceptance policy (see <xref target="RFC8078" />). Implementations
+        MUST NOT proceed to subsequent steps until the expected DS or NS
+        RRset change is observed at the Parent, and SHOULD bound each such
+        wait with a timeout after which the operation is flagged for
+        operator attention rather than continuing. A premature transition
+        to a later step, particularly one that removes a key or signature,
+        while the Parent still publishes the old delegation can break the
+        chain of trust and cause resolution failures.
+      </t>
+    </section>
     <section anchor="IANA" numbered="true" toc="default">
       <name>IANA Considerations</name>
       <t>This document has no IANA actions.</t>
