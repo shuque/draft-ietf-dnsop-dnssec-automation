@@ -350,8 +350,10 @@
           </li>
           <li>
             Compare NS RRset of the signers to the Parent. If there is a
-            difference, publish a CSYNC record with the NS, A, and AAAA bits
-            set on all signers.
+            difference, publish a CSYNC record with the NS bit set on all
+            signers. The A and AAAA bits are also set if any of the
+            nameservers are in-domain and thus require glue address records
+            at the Parent.
           </li>
           <li>
             Wait for Parent to publish updates to the delegating NS RRset based on observation of the CSYNC RRsets.
@@ -369,8 +371,10 @@
           </li>
           <li>
             Compare NS RRset of the signers to the Parent. If there
-            is a difference, publish a CSYNC record with the NS, A, and AAAA
-            bits set on the remaining signers.
+            is a difference, publish a CSYNC record with the NS bit set on
+            the remaining signers. The A and AAAA bits are also set if any
+            of the nameservers are in-domain and thus require glue address
+            records at the Parent.
           </li>
           <li>
             Wait for Parent to publish NS RRset.
