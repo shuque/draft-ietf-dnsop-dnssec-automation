@@ -324,9 +324,11 @@
         </t>
         <t>
           This can be viewed as an initial state where the multi-signer group has only one signer.
+          The group is then grown to its intended size by applying the
+          procedure in <xref target="join" /> to add each additional signer.
         </t>
       </section>
-      <section numbered="true" toc="default">
+      <section anchor="join" numbered="true" toc="default">
         <name>A signer joins the multi-signer group</name>
         <ol spacing="normal">
           <li>
